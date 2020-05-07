@@ -287,7 +287,14 @@ def user_add(module, client, db_name, user, password, roles):
     # pymongo's user_add is a _create_or_update_user so we won't know if it was changed or updated
     # without reproducing a lot of the logic in database.py of pymongo
     db = client[db_name]
-    exists = user_find(client, user, db_name)
+
+    try:
+        exists = user_find(client, user, db_name)
+    except Exception as e:
+        if "not authorized on admin to execute command { find: \"system.users\"" in e:
+            exists = False
+        else:
+            module.fail_json(msg='Unable find user: %s' % to_native(e), exception=traceback.format_exc())
 
     if exists:
         user_add_db_command = 'updateUser'
