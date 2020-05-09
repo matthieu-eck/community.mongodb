@@ -288,23 +288,10 @@ def user_add(module, client, db_name, user, password, roles):
     # without reproducing a lot of the logic in database.py of pymongo
     db = client[db_name]
 
-    try:
-        exists = user_find(client, user, db_name)
-    except Exception as e:
-        if "not authorized on admin to execute command { find: \"system.users\"" in e:
-            exists = False
-        else:
-            module.fail_json(msg='Unable find user: %s' % to_native(e), exception=traceback.format_exc())
-
-    if exists:
-        user_add_db_command = 'updateUser'
-    else:
-        user_add_db_command = 'createUser'
-
     if roles is None:
-        db.command(user_add_db_command, user, pwd=password)
+        db.add_user(user, password, False)
     else:
-        db.command(user_add_db_command, user, pwd=password, roles=roles)
+        db.add_user(user, password, None, roles=roles)
 
 
 def user_remove(module, client, db_name, user):
@@ -313,7 +300,7 @@ def user_remove(module, client, db_name, user):
         if module.check_mode:
             module.exit_json(changed=True, user=user)
         db = client[db_name]
-        db.command("dropUser", user)
+        db.remove_user(user)
     else:
         module.exit_json(changed=False, user=user)
 
